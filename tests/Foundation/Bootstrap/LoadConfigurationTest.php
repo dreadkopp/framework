@@ -15,6 +15,7 @@ class LoadConfigurationTest extends TestCase
         (new LoadConfiguration())->bootstrap($app);
 
         $this->assertSame('Laravel', $app['config']['app.name']);
+        $this->assertTrue($app['config']['app.is_base_config']);
     }
 
     public function testDontLoadBaseConfiguration()
@@ -36,5 +37,23 @@ class LoadConfigurationTest extends TestCase
 
         $this->assertNull($app['config']['bar.foo']);
         $this->assertSame('bar', $app['config']['custom.foo']);
+
+    }
+
+    public function testMarksMergedConfigsAsMerged()
+    {
+        $app = new Application(__DIR__.'/../fixtures');
+        $app->useConfigPath(__DIR__.'/../fixtures/config');
+
+        (new LoadConfiguration())->bootstrap($app);
+
+        $this->assertSame([
+            'overwrite' => true,
+        ], $app['config']['database.connections.mysql']);
+
+        $this->assertArrayHasKey(
+            'is_merged_from_framework',
+            $app['config']['database.connections.pgsql']
+        );
     }
 }

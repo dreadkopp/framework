@@ -82,6 +82,19 @@ class LoadConfiguration
         }
     }
 
+    protected function markAsMerged(array &$config) {
+        // Add the key-value pair to the current level
+        $config['is_merged_from_framework'] = true;
+
+        // Iterate over the array
+        foreach ($config as &$item) {
+            // If the item is an array, recurse into it
+            if (is_array($item)) {
+                $this->markAsMerged($item);
+            }
+        }
+    }
+
     /**
      * Load the given configuration file.
      *
@@ -96,6 +109,9 @@ class LoadConfiguration
         $config = (fn () => require $path)();
 
         if (isset($base[$name])) {
+
+            $this->markAsMerged($base[$name]);
+
             $config = array_merge($base[$name], $config);
 
             foreach ($this->mergeableOptions($name) as $option) {
@@ -187,7 +203,9 @@ class LoadConfiguration
         $config = [];
 
         foreach (Finder::create()->files()->name('*.php')->in(__DIR__.'/../../../../config') as $file) {
-            $config[basename($file->getRealPath(), '.php')] = require $file->getRealPath();
+            $configName = basename($file->getRealPath(), '.php');
+            $config[$configName] = require $file->getRealPath();
+            $config[$configName]['is_base_config'] = true;
         }
 
         return $config;
